@@ -24,22 +24,37 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/front:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/backend-eval2:latest
 
       - name: Desplegar en la EC2 (via ssh)
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host: ${{ secrets.EC2_HOST }}        # IP Privada del Backend
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          proxy_host: ${{ secrets.BASTION_HOST }}
+          proxy_username: ${{ secrets.BASTION_USER }}
+          proxy_key: ${{ secrets.BASTION_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/front:latest
+            # Login para evitar límites de rate
+            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            
+            # Pull de la imagen correcta
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/backend-eval2:latest
 
-            docker stop front || true
-            docker rm front || true
+            # Detener y eliminar contenedor anterior
+            docker stop backend || true
+            docker rm backend || true
 
+            # Ejecutar con puerto 3000 y variables de DB
             docker run -d \
-              --name front \
-              -p 80:80 \
+              --name backend \
+              -p 3000:3000 \
+              -e PORT=3000 \
+              -e DB_HOST=${{ secrets.DB_HOST }} \
+              -e DB_USER=${{ secrets.DB_USER }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e DB_NAME=${{ secrets.DB_NAME }} \
+              -e DB_PORT=${{ secrets.DB_PORT }} \
               --restart always \
-              ${{ secrets.DOCKERHUB_USERNAME }}/front:latest
+              ${{ secrets.DOCKERHUB_USERNAME }}/backend-eval2:latest

@@ -1,6 +1,6 @@
 #Construccion del dockerfile
 
-FROM node:18 as build
+FROM node:18 AS build
 WORKDIR /workspace
 
 COPY package*.json ./
@@ -18,7 +18,7 @@ COPY --from=build /workspace/node_modules ./node_modules
 COPY . .
 
 # Permisos al usuario 
-RUN chown -R ev2useruser:ev2user /app
+RUN chown -R ev2user:ev2user /app
 USER ev2user
 
 EXPOSE 3000
