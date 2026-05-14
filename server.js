@@ -136,13 +136,12 @@ app.use('*', (req, res) => {
     res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
-
-
 // Manejo de errores globales
 app.use((err, req, res, next) => {
     console.error('Error no manejado:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
 });
+
 
 // Iniciar el servidor
 app.listen(PORT, () => {
