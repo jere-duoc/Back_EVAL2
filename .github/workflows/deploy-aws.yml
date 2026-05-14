@@ -36,22 +36,30 @@ jobs:
           proxy_username: ${{ secrets.BASTION_USER }}
           proxy_key: ${{ secrets.BASTION_KEY }}
           script: |
-            # Usar sudo para comandos de docker para evitar 'permission denied'
-            sudo docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            # Preparar carpeta
+            mkdir -p ~/backend
+            cd ~/backend
             
+            # Crear el archivo .env dinámicamente desde los Secrets de GitHub
+            echo "PORT=3000" > .env
+            echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+            echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+            echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+            
+            # Login y Pull
+            sudo docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/backend-eval2:latest
 
+            # Limpiar contenedor anterior
             sudo docker stop backend || true
             sudo docker rm backend || true
 
+            # Ejecutar usando el archivo .env recién creado
             sudo docker run -d \
               --name backend \
               -p 3000:3000 \
-              -e PORT=3000 \
-              -e DB_HOST=${{ secrets.DB_HOST }} \
-              -e DB_USER=${{ secrets.DB_USER }} \
-              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              -e DB_NAME=${{ secrets.DB_NAME }} \
-              -e DB_PORT=${{ secrets.DB_PORT }} \
+              --env-file .env \
               --restart always \
               ${{ secrets.DOCKERHUB_USERNAME }}/backend-eval2:latest
